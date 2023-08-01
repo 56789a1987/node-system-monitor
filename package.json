@@ -1,0 +1,26 @@
+{
+  "name": "sys-monitor",
+  "version": "1.0.0",
+  "description": "Linux system monitor bindings for Node",
+  "main": "index.js",
+  "typings": "./index.d.ts",
+  "scripts": {
+    "test": "node tests/test.js",
+    "install": "node-gyp rebuild",
+    "build": "node-gyp configure && node-gyp build",
+    "clean": "node-gyp clean"
+  },
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/56789a1987/node-system-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/56789a1987/node-system-monitor/issues"
+  },
+  "homepage": "https://github.com/56789a1987/node-system-monitor",
+  "dependencies": {
+    "bindings": "^1.5.0"
+  }
+}
