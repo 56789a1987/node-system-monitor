@@ -4,7 +4,7 @@
 
 napi_value GetMemoryUsage(const napi_env env, const napi_callback_info info)
 {
-	char line[128], name[64];
+	char line[160], name[64];
 	unsigned long long value;
 
 	napi_status status;

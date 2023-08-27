@@ -9,7 +9,7 @@ static std::vector<NetworkEntry *> lastNetworks;
 napi_value GetNetworkUsage(const napi_env env, const napi_callback_info info)
 {
 	NetworkEntry *pInfo;
-	char line[128], name[64];
+	char line[160], name[64];
 	unsigned long long temp, recvBytes, recvPackets, transBytes, transPackets;
 	size_t n = 0;
 

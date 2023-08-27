@@ -10,7 +10,7 @@ static std::vector<CPUTimeEntry *> lastCPUs;
 napi_value GetCPUUsage(const napi_env env, const napi_callback_info info)
 {
 	CPUTimeEntry *pInfo;
-	char line[128], id[64];
+	char line[160], id[64];
 	unsigned long long user, nice, system, idle, ioWait, irq, softIrq;
 	size_t n = 0;
 
