@@ -1,25 +1,26 @@
 #include <sensors/sensors.h>
 #include "sensors.h"
 
-napi_value GetSensors(const napi_env env, const napi_callback_info info)
+void GetSensors(const FunctionCallbackInfo<Value> &args)
 {
 	double value;
 
-	napi_status status;
-	napi_value nValue, nPrefix, nPath, nName, nNumber, nType;
+	// node value fields
+	Isolate *isolate = args.GetIsolate();
+	Local<Context> context = isolate->GetCurrentContext();
 
 	static bool sensorsLoaded = false;
 	if (!sensorsLoaded)
 	{
 		if (sensors_init(NULL) != 0)
 		{
-			napi_throw_error(env, NULL, "Error initializing sensors");
-			return NULL;
+			THROW_ERROR(isolate, "Error initializing sensors");
+			return;
 		}
 		sensorsLoaded = true;
 	}
 
-	NewArray(array);
+	Local<Array> array = Array::New(isolate);
 	int nr1 = 0, i1 = 0;
 	for (;;)
 	{
@@ -27,20 +28,13 @@ napi_value GetSensors(const napi_env env, const napi_callback_info info)
 		if (chipName == NULL)
 			break;
 
-		// create values for chip name object
-		NewArray(featuresArray);
-		NAPI_ASSERT(napi_create_string_utf8(env, chipName->prefix, NAPI_AUTO_LENGTH, &nPrefix));
-		NAPI_ASSERT(napi_create_string_utf8(env, chipName->path, NAPI_AUTO_LENGTH, &nPath));
-		napi_property_descriptor properties[] = {
-			DECLARE_NAPI_VALUE("prefix", nPrefix),
-			DECLARE_NAPI_VALUE("path", nPath),
-			DECLARE_NAPI_VALUE("features", featuresArray),
-		};
-
-		// create chip name object and add it to the general array
-		NewObject(chipNameObject);
-		NAPI_ASSERT(napi_define_properties(env, chipNameObject, 3, properties));
-		NAPI_ASSERT(napi_set_element(env, array, i1, chipNameObject));
+		// create a chip name object and add it to general array
+		Local<Object> chipNameObject = Object::New(isolate);
+		Local<Array> featuresArray = Array::New(isolate);
+		chipNameObject->Set(context, V8_STRING("prefix"), V8_STRING(chipName->prefix)).Check();
+		chipNameObject->Set(context, V8_STRING("path"), V8_STRING(chipName->path)).Check();
+		chipNameObject->Set(context, V8_STRING("features"), featuresArray).Check();
+		array->Set(context, i1, chipNameObject).Check();
 		i1++;
 
 		int nr2 = 0, i2 = 0;
@@ -50,22 +44,14 @@ napi_value GetSensors(const napi_env env, const napi_callback_info info)
 			if (feature == NULL)
 				break;
 
-			// create values for feature object
-			NewArray(subfeaturesArray);
-			NAPI_ASSERT(napi_create_string_utf8(env, feature->name, NAPI_AUTO_LENGTH, &nName));
-			NAPI_ASSERT(napi_create_double(env, feature->number, &nNumber));
-			NAPI_ASSERT(napi_create_double(env, feature->type, &nType));
-			napi_property_descriptor properties[] = {
-				DECLARE_NAPI_VALUE("name", nName),
-				DECLARE_NAPI_VALUE("number", nNumber),
-				DECLARE_NAPI_VALUE("type", nType),
-				DECLARE_NAPI_VALUE("subfeatures", subfeaturesArray),
-			};
-
-			// create feature object and add it to the features array
-			NewObject(featureObject);
-			NAPI_ASSERT(napi_define_properties(env, featureObject, 4, properties));
-			NAPI_ASSERT(napi_set_element(env, featuresArray, i2, featureObject));
+			// create a feature object and add it to features array
+			Local<Object> featureObject = Object::New(isolate);
+			Local<Array> subfeaturesArray = Array::New(isolate);
+			featureObject->Set(context, V8_STRING("name"), V8_STRING(feature->name)).Check();
+			featureObject->Set(context, V8_STRING("number"), V8_NUMBER(feature->number)).Check();
+			featureObject->Set(context, V8_STRING("type"), V8_NUMBER(feature->type)).Check();
+			featureObject->Set(context, V8_STRING("subfeatures"), subfeaturesArray).Check();
+			featuresArray->Set(context, i2, featureObject).Check();
 			i2++;
 
 			int nr3 = 0, i3 = 0;
@@ -75,20 +61,12 @@ napi_value GetSensors(const napi_env env, const napi_callback_info info)
 				if (subfeature == NULL)
 					break;
 
-				// create values for subfeature object
-				NAPI_ASSERT(napi_create_string_utf8(env, subfeature->name, NAPI_AUTO_LENGTH, &nName));
-				NAPI_ASSERT(napi_create_double(env, subfeature->number, &nNumber));
-				NAPI_ASSERT(napi_create_double(env, subfeature->type, &nType));
-				napi_property_descriptor properties[] = {
-					DECLARE_NAPI_VALUE("name", nName),
-					DECLARE_NAPI_VALUE("number", nNumber),
-					DECLARE_NAPI_VALUE("type", nType),
-				};
-
-				// create subfeature object and add it to the subfeatures array
-				NewObject(subfeatureObject);
-				NAPI_ASSERT(napi_define_properties(env, subfeatureObject, 3, properties));
-				NAPI_ASSERT(napi_set_element(env, subfeaturesArray, i3, subfeatureObject));
+				// create a subfeature object and add it to subfeatures array
+				Local<Object> subfeatureObject = Object::New(isolate);
+				subfeatureObject->Set(context, V8_STRING("name"), V8_STRING(subfeature->name)).Check();
+				subfeatureObject->Set(context, V8_STRING("number"), V8_NUMBER(subfeature->number)).Check();
+				subfeatureObject->Set(context, V8_STRING("type"), V8_NUMBER(subfeature->type)).Check();
+				subfeaturesArray->Set(context, i3, subfeatureObject).Check();
 				i3++;
 
 				// set value of subfeature
@@ -97,13 +75,12 @@ napi_value GetSensors(const napi_env env, const napi_callback_info info)
 					int rc = sensors_get_value(chipName, subfeature->number, &value);
 					if (rc >= 0)
 					{
-						NAPI_ASSERT(napi_create_double(env, value, &nValue));
-						NAPI_ASSERT(napi_set_named_property(env, subfeatureObject, "value", nValue));
+						subfeatureObject->Set(context, V8_STRING("value"), V8_NUMBER(value)).Check();
 					}
 				}
 			}
 		}
 	}
 
-	return array;
+	args.GetReturnValue().Set(array);
 }

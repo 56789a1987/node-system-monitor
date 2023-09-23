@@ -1,55 +1,39 @@
 #include <sys/statvfs.h>
 #include "disk.h"
 
-napi_value GetDiskUsage(const napi_env env, const napi_callback_info info)
+void GetDiskUsage(const FunctionCallbackInfo<Value> &args)
 {
+	// native value fields
 	char file[256];
 	struct statvfs fsData;
 
-	napi_status status;
-	size_t argc = 1;
-	napi_value args[1], nBlockSize, nBlocks, nBlocksFree, nBlocksAvail;
-	napi_valuetype valueType;
+	// node value fields
+	Isolate *isolate = args.GetIsolate();
+	Local<Context> context = isolate->GetCurrentContext();
 
 	// make sure we have one argument
-	NAPI_ASSERT(napi_get_cb_info(env, info, &argc, args, NULL, NULL));
-	if (argc < 1)
+	if (args.Length() < 1 || !args[0]->IsString())
 	{
-		napi_throw_error(env, NULL, "Must provide a string argument 'file'");
-		return NULL;
+		THROW_TYPE_ERROR(isolate, "Must provide a string argument 'file'");
+		return;
 	}
 
 	// make sure the argument is a string
-	NAPI_ASSERT(napi_typeof(env, args[0], &valueType));
-	if (valueType != napi_string)
-	{
-		napi_throw_error(env, NULL, "Must provide a string argument 'file'");
-		return NULL;
-	}
+	args[0].As<String>()->WriteUtf8(isolate, file, sizeof(file));
 
 	// get the string from arguments
-	NAPI_ASSERT(napi_get_value_string_utf8(env, args[0], file, sizeof(file), &argc));
 	if (statvfs(file, &fsData) != 0)
 	{
-		napi_throw_error(env, NULL, "Error getting disk stats");
-		return NULL;
+		THROW_ERROR(isolate, "Error getting disk stats");
+		return;
 	}
 
-	// create values for return object
-	NAPI_ASSERT(napi_create_double(env, fsData.f_bsize, &nBlockSize));
-	NAPI_ASSERT(napi_create_double(env, fsData.f_blocks, &nBlocks));
-	NAPI_ASSERT(napi_create_double(env, fsData.f_bfree, &nBlocksFree));
-	NAPI_ASSERT(napi_create_double(env, fsData.f_bavail, &nBlocksAvail));
-
 	// create return object
-	NewObject(object);
-	napi_property_descriptor properties[] = {
-		DECLARE_NAPI_VALUE("blockSize", nBlockSize),
-		DECLARE_NAPI_VALUE("blocks", nBlocks),
-		DECLARE_NAPI_VALUE("blocksFree", nBlocksFree),
-		DECLARE_NAPI_VALUE("blocksAvail", nBlocksAvail),
-	};
-	NAPI_ASSERT(napi_define_properties(env, object, 4, properties));
+	Local<Object> returnValue = Object::New(isolate);
+	returnValue->Set(context, V8_STRING("blockSize"), V8_NUMBER(fsData.f_bsize)).Check();
+	returnValue->Set(context, V8_STRING("blocks"), V8_NUMBER(fsData.f_blocks)).Check();
+	returnValue->Set(context, V8_STRING("blocksFree"), V8_NUMBER(fsData.f_bfree)).Check();
+	returnValue->Set(context, V8_STRING("blocksAvail"), V8_NUMBER(fsData.f_bavail)).Check();
 
-	return object;
+	args.GetReturnValue().Set(returnValue);
 }

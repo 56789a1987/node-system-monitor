@@ -1,30 +1,22 @@
 #ifndef MONITOR_COMMON_H
 #define MONITOR_COMMON_H
 
-#include <assert.h>
-#include <node_api.h>
+#include <v8.h>
+#include <node.h>
 
-#define DECLARE_NAPI_VALUE(name, value)                            \
-	{                                                              \
-		name, NULL, NULL, NULL, NULL, value, napi_enumerable, NULL \
-	}
-#define DECLARE_NAPI_METHOD(name, function)                           \
-	{                                                                 \
-		name, NULL, function, NULL, NULL, NULL, napi_enumerable, NULL \
-	}
+using namespace v8;
 
-#define NAPI_ASSERT(function) \
-	status = function;        \
-	assert(status == napi_ok);
+#define V8_STRING(string) String::NewFromUtf8(isolate, string, NewStringType::kInternalized).ToLocalChecked()
+#define V8_NUMBER(value) Number::New(isolate, value)
 
-#define NewObject(name)                      \
-	napi_value name;                         \
-	status = napi_create_object(env, &name); \
-	assert(status == napi_ok);
+inline void THROW_ERROR(Isolate *isolate, const char *message)
+{
+	isolate->ThrowException(Exception::Error(V8_STRING(message)));
+}
 
-#define NewArray(name)                      \
-	napi_value name;                        \
-	status = napi_create_array(env, &name); \
-	assert(status == napi_ok);
+inline void THROW_TYPE_ERROR(Isolate *isolate, const char *message)
+{
+	isolate->ThrowException(Exception::TypeError(V8_STRING(message)));
+}
 
 #endif

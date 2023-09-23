@@ -11,6 +11,6 @@ typedef struct
 	unsigned long long transPackets;
 } NetworkEntry;
 
-napi_value GetNetworkUsage(const napi_env env, const napi_callback_info info);
+void GetNetworkUsage(const FunctionCallbackInfo<Value> &args);
 
 #endif

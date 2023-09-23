@@ -3,6 +3,6 @@
 
 #include "common.h"
 
-napi_value GetMemoryUsage(const napi_env env, const napi_callback_info info);
+void GetMemoryUsage(const FunctionCallbackInfo<Value> &args);
 
 #endif

@@ -14,6 +14,6 @@ typedef struct
 	unsigned long long softIrq;
 } CPUTimeEntry;
 
-napi_value GetCPUUsage(const napi_env env, const napi_callback_info info);
+void GetCPUUsage(const FunctionCallbackInfo<Value> &args);
 
 #endif

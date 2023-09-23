@@ -2,22 +2,25 @@
 #include <string.h>
 #include "memory.h"
 
-napi_value GetMemoryUsage(const napi_env env, const napi_callback_info info)
+void GetMemoryUsage(const FunctionCallbackInfo<Value> &args)
 {
+	// native value fields
 	char line[160], name[64];
 	unsigned long long value;
 
-	napi_status status;
-	napi_value nValue;
+	// node value fields
+	Isolate *isolate = args.GetIsolate();
+	Local<Context> context = isolate->GetCurrentContext();
 
 	FILE *file = fopen("/proc/meminfo", "r");
 	if (file == NULL)
 	{
-		napi_throw_error(env, NULL, "Error getting memory info");
-		return NULL;
+		THROW_ERROR(isolate, "Error getting memory info");
+		return;
 	}
 
-	NewObject(object);
+	Local<Object> returnValue = Object::New(isolate);
+
 	while (fgets(line, sizeof(line), file) != NULL)
 	{
 		sscanf(line, "%s %llu", name, &value);
@@ -31,11 +34,10 @@ napi_value GetMemoryUsage(const napi_env env, const napi_callback_info info)
 			strcmp(name, "SwapTotal") == 0 ||
 			strcmp(name, "SwapFree") == 0)
 		{
-			NAPI_ASSERT(napi_create_double(env, value, &nValue));
-			NAPI_ASSERT(napi_set_named_property(env, object, name, nValue));
+			returnValue->Set(context, V8_STRING(name), V8_NUMBER(value)).Check();
 		}
 	}
 
 	fclose(file);
-	return object;
+	args.GetReturnValue().Set(returnValue);
 }

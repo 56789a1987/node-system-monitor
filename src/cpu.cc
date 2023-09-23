@@ -7,25 +7,28 @@
 static CPUTimeEntry *lastGeneralCPU = NULL;
 static std::vector<CPUTimeEntry *> lastCPUs;
 
-napi_value GetCPUUsage(const napi_env env, const napi_callback_info info)
+void GetCPUUsage(const FunctionCallbackInfo<Value> &args)
 {
+	// native value fields
 	CPUTimeEntry *pInfo;
 	char line[160], id[64];
 	unsigned long long user, nice, system, idle, ioWait, irq, softIrq;
 	size_t n = 0;
 
-	napi_status status;
-	napi_value nUser, nNice, nSystem, nIdle, nIoWait, nIrq, nSoftIrq;
+	// node value fields
+	Isolate *isolate = args.GetIsolate();
+	Local<Context> context = isolate->GetCurrentContext();
 
 	// make sure we have opened the file successfully
 	FILE *file = fopen("/proc/stat", "r");
 	if (file == NULL)
 	{
-		napi_throw_error(env, NULL, "Error getting CPU stats");
-		return NULL;
+		THROW_ERROR(isolate, "Error getting CPU stats");
+		return;
 	}
 
-	NewArray(array);
+	Local<Array> array = Array::New(isolate);
+	Local<Object> entry;
 	while (fgets(line, sizeof(line), file) != NULL)
 	{
 		sscanf(line, "%s %llu %llu %llu %llu %llu %llu %llu", id, &user, &nice, &system, &idle, &ioWait, &irq, &softIrq);
@@ -83,42 +86,29 @@ napi_value GetCPUUsage(const napi_env env, const napi_callback_info info)
 				memcpy(pInfo, &info, sizeof(CPUTimeEntry));
 			}
 
-			// create values for CPU entry object
-			NAPI_ASSERT(napi_create_double(env, user, &nUser));
-			NAPI_ASSERT(napi_create_double(env, nice, &nNice));
-			NAPI_ASSERT(napi_create_double(env, system, &nSystem));
-			NAPI_ASSERT(napi_create_double(env, idle, &nIdle));
-			NAPI_ASSERT(napi_create_double(env, ioWait, &nIoWait));
-			NAPI_ASSERT(napi_create_double(env, irq, &nIrq));
-			NAPI_ASSERT(napi_create_double(env, softIrq, &nSoftIrq));
-
 			// create CPU entry object and set properties
-			NewObject(item);
-			napi_property_descriptor properties[] = {
-				DECLARE_NAPI_VALUE("user", nUser),
-				DECLARE_NAPI_VALUE("nice", nNice),
-				DECLARE_NAPI_VALUE("system", nSystem),
-				DECLARE_NAPI_VALUE("idle", nIdle),
-				DECLARE_NAPI_VALUE("ioWait", nIoWait),
-				DECLARE_NAPI_VALUE("irq", nIrq),
-				DECLARE_NAPI_VALUE("softIrq", nSoftIrq),
-			};
-			NAPI_ASSERT(napi_define_properties(env, item, 7, properties));
+			entry = Object::New(isolate);
+			entry->Set(context, V8_STRING("user"), V8_NUMBER(user)).Check();
+			entry->Set(context, V8_STRING("nice"), V8_NUMBER(nice)).Check();
+			entry->Set(context, V8_STRING("system"), V8_NUMBER(system)).Check();
+			entry->Set(context, V8_STRING("idle"), V8_NUMBER(idle)).Check();
+			entry->Set(context, V8_STRING("ioWait"), V8_NUMBER(ioWait)).Check();
+			entry->Set(context, V8_STRING("irq"), V8_NUMBER(irq)).Check();
+			entry->Set(context, V8_STRING("softIrq"), V8_NUMBER(softIrq)).Check();
 
 			// add the entry to array
 			if (isGeneral)
 			{
-				status = napi_set_named_property(env, array, "general", item);
+				array->Set(context, V8_STRING("general"), entry).Check();
 			}
 			else
 			{
-				status = napi_set_element(env, array, n, item);
+				array->Set(context, n, entry).Check();
 				n++;
 			}
-			assert(status == napi_ok);
 		}
 	}
 
 	fclose(file);
-	return array;
+	args.GetReturnValue().Set(array);
 }
