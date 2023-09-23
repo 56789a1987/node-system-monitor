@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <vector>
 #include "cpu.h"
 
@@ -44,7 +42,7 @@ void GetCPUUsage(const FunctionCallbackInfo<Value> &args)
 					// initialize last values object
 					// the result of the first call should be discarded if possible
 					// because the difference is the total value
-					pInfo = (CPUTimeEntry *)malloc(sizeof(CPUTimeEntry));
+					pInfo = new CPUTimeEntry;
 					memcpy(pInfo, &info, sizeof(CPUTimeEntry));
 					lastGeneralCPU = pInfo;
 					pInfo = NULL;
@@ -61,7 +59,7 @@ void GetCPUUsage(const FunctionCallbackInfo<Value> &args)
 					// initialize last values object
 					// the result of the first call should be discarded if possible
 					// because the difference is the total value
-					pInfo = (CPUTimeEntry *)malloc(sizeof(CPUTimeEntry));
+					pInfo = new CPUTimeEntry;
 					memcpy(pInfo, &info, sizeof(CPUTimeEntry));
 					lastCPUs.push_back(pInfo);
 					pInfo = NULL;

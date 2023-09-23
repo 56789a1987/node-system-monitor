@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <vector>
 #include "network.h"
 
@@ -45,7 +43,7 @@ void GetNetworkUsage(const FunctionCallbackInfo<Value> &args)
 			// initialize last values object
 			// the result of the first call should be discarded if possible
 			// because the difference is the total value
-			pInfo = (NetworkEntry *)malloc(sizeof(NetworkEntry));
+			pInfo = new NetworkEntry;
 			memcpy(pInfo, &entry, sizeof(NetworkEntry));
 			lastNetworks.push_back(pInfo);
 			pInfo = NULL;
